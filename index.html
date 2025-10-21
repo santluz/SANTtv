@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SANTtv - Stream Deck Web</title>
+  <style>
+    :root{
+      --bg:#071427; --card:#0e2940; --accent:#26c6da; --text:#fff;
+    }
+    body{margin:0;font-family:Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,0.03)}
+    header .left{display:flex;align-items:center;gap:12px}
+    header img{height:46px;border-radius:6px}
+    header h1{font-size:1.1rem;margin:0}
+    .container{display:flex;gap:18px;padding:18px;flex:1;align-items:flex-start;justify-content:center;overflow:auto}
+    .deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;width:720px}
+    .btn{background:linear-gradient(180deg,var(--card),#07283b);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);user-select:none}
+    .btn h3{margin:6px 0 0 0;font-size:16px}
+    .controls{width:320px;display:flex;flex-direction:column;gap:8px}
+    .panel{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px}
+    input[type=number]{width:70px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text)}
+    .small{font-size:13px;color:#cfeff4}
+    .timer{font-weight:700;font-size:22px}
+    .add-btn{display:flex;gap:8px;margin-top:8px}
+    .link{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <img src="Logo_Fut_Amador.jpeg" alt="Logo">
+      <h1>SANTtv - Painel Stream Deck</h1>
+    </div>
+    <div>
+      <span class="small">Acesso remoto: proteja com token</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="deck" id="deck">
+      <div class="btn" onclick="toggleScore()">
+        <div>🏆</div><h3 id="scoreToggleLabel">Mostrar Placar</h3>
+      </div>
+
+      <div class="btn" onclick="incGoal('home')">
+        <div>⚽</div><h3>+ Gol Casa</h3>
+      </div>
+      <div class="btn" onclick="decGoal('home')">
+        <div>⬇️</div><h3>- Gol Casa</h3>
+      </div>
+
+      <div class="btn" onclick="incGoal('away')">
+        <div>⚽</div><h3>+ Gol Visitante</h3>
+      </div>
+      <div class="btn" onclick="decGoal('away')">
+        <div>⬇️</div><h3>- Gol Visitante</h3>
+      </div>
+
+      <div class="btn" onclick="startTimer()"><div>▶️</div><h3>Iniciar Timer</h3></div>
+      <div class="btn" onclick="pauseTimer()"><div>⏸️</div><h3>Pausar Timer</h3></div>
+      <div class="btn" onclick="resetTimer()"><div>🔁</div><h3>Reset Timer</h3></div>
+
+      <div class="btn" onclick="playVinheta('vinheta1')"><div>🎬</div><h3>Vinheta 1</h3></div>
+      <div class="btn" onclick="playVinheta('vinheta2')"><div>🎬</div><h3>Vinheta 2</h3></div>
+
+      <!-- espaço para botões dinâmicos -->
+    </div>
+
+    <div class="controls">
+      <div class="panel">
+        <div class="small">Placar Atual</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+          <div>
+            <div class="small">Casa</div>
+            <input id="homeScore" type="number" value="0" />
+          </div>
+          <div>
+            <div class="small">Visitante</div>
+            <input id="awayScore" type="number" value="0" />
+          </div>
+          <div style="margin-left:8px">
+            <button onclick="setScoreFromInputs()">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="small">Cronômetro</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <div class="timer" id="timerDisplay">00:00</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px">
+            <input id="setMinutes" type="number" placeholder="mm" style="width:60px" />
+            <input id="setSeconds" type="number" placeholder="ss" style="width:60px" />
+            <button onclick="setTimerFromInputs()">Setar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="small">Adicionar botão</div>
+        <input id="newButtonLabel" placeholder="Rótulo (ex: Vinheta 3)" />
+        <input id="newButtonAction" placeholder="Action ID (ex: vinheta3)" />
+        <div class="add-btn"><button onclick="addCustomButton()">Adicionar</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="small">Configuração / Teste</div>
+        <div style="margin-top:8px">
+          <div class="small">Token</div>
+          <input id="tokenInput" placeholder="Digite o token de acesso" />
+          <div style="margin-top:8px">
+            <button onclick="testHealth()">Testar Conexão</button>
+            <span id="healthResult" class="small"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="small">Acesso Internet</div>
+        <div style="margin-top:8px" class="small">
+          Hospede este servidor em um VPS / Render / Railway / ou exponha local com ngrok. Use token em headers: <code>x-api-token</code>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // Estado local
+  let scoreVisible = false;
+  let home = 0, away = 0;
+  let timerSeconds = 0;
+  let timerInterval = null;
+
+  // Util: header com token
+  function getHeaders() {
+    const token = document.getElementById('tokenInput').value || '';
+    return { 'Content-Type': 'application/json', 'x-api-token': token };
+  }
+
+  async function apiPost(path, body) {
+    try {
+      const res = await fetch('/api' + path, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(body || {})
+      });
+      const txt = await res.json().catch(()=>null);
+      return { ok: res.ok, status: res.status, body: txt };
+    } catch (err) {
+      console.error(err);
+      return { ok:false, error: err.message };
+    }
+  }
+
+  // scoreboard
+  async function toggleScore() {
+    if (!scoreVisible) {
+      const r = await apiPost('/score/show', {});
+      if (r.ok) scoreVisible = true;
+      else alert('Erro ao mostrar placar: ' + JSON.stringify(r));
+    } else {
+      const r = await apiPost('/score/hide', {});
+      if (r.ok) scoreVisible = false;
+      else alert('Erro ao esconder placar: ' + JSON.stringify(r));
+    }
+    document.getElementById('scoreToggleLabel').innerText = scoreVisible ? 'Esconder Placar' : 'Mostrar Placar';
+  }
+
+  async function setScoreFromInputs() {
+    const h = parseInt(document.getElementById('homeScore').value||0);
+    const a = parseInt(document.getElementById('awayScore').value||0);
+    home = h; away = a;
+    const r = await apiPost('/score/set', { home, away });
+    if (!r.ok) alert('Erro ao setar placar: ' + JSON.stringify(r));
+  }
+
+  async function incGoal(side) {
+    if (side === 'home') home++;
+    else away++;
+    document.getElementById('homeScore').value = home;
+    document.getElementById('awayScore').value = away;
+    await apiPost('/score/set', { home, away });
+  }
+
+  async function decGoal(side) {
+    if (side === 'home') home = Math.max(0, home-1);
+    else away = Math.max(0, away-1);
+    document.getElementById('homeScore').value = home;
+    document.getElementById('awayScore').value = away;
+    await apiPost('/score/set', { home, away });
+  }
+
+  // timer
+  function formatTime(s) {
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    return `${mm}:${ss}`;
+  }
+  function updateTimerDisplay() { document.getElementById('timerDisplay').innerText = formatTime(timerSeconds); }
+
+  async function startTimer() {
+    if (timerInterval) return;
+    // Envia comando start para backend (que repassaria ao UNO)
+    await apiPost('/timer/action', { action: 'start' });
+    timerInterval = setInterval(()=>{ timerSeconds++; updateTimerDisplay(); }, 1000);
+  }
+  async function pauseTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    await apiPost('/timer/action', { action: 'pause' });
+  }
+  async function resetTimer() {
+    timerSeconds = 0; updateTimerDisplay();
+    await apiPost('/timer/action', { action: 'reset' });
+  }
+  async function setTimerFromInputs() {
+    const m = parseInt(document.getElementById('setMinutes').value||0);
+    const s = parseInt(document.getElementById('setSeconds').value||0);
+    timerSeconds = m*60 + s; updateTimerDisplay();
+    await apiPost('/timer/action', { action: 'set', timeSeconds: timerSeconds });
+  }
+
+  // vinheta
+  async function playVinheta(id) {
+    await apiPost('/vinheta/play', { id });
+  }
+
+  // adicionar botões dinamicamente
+  function addCustomButton() {
+    const label = document.getElementById('newButtonLabel').value.trim();
+    const actionId = document.getElementById('newButtonAction').value.trim();
+    if (!label || !actionId) { alert('Preencha rótulo e action id'); return; }
+    const deck = document.getElementById('deck');
+    const div = document.createElement('div');
+    div.className = 'btn';
+    div.innerHTML = `<div>🔘</div><h3>${label}</h3>`;
+    div.onclick = () => playVinheta(actionId);
+    deck.appendChild(div);
+    document.getElementById('newButtonLabel').value=''; document.getElementById('newButtonAction').value='';
+  }
+
+  // health
+  async function testHealth(){
+    document.getElementById('healthResult').innerText = '...';
+    try {
+      const token = document.getElementById('tokenInput').value;
+      const res = await fetch('/api/health', { headers: {'x-api-token': token }});
+      const json = await res.json();
+      document.getElementById('healthResult').innerText = json.ok ? 'Conexão OK' : 'Erro';
+    } catch(e){
+      document.getElementById('healthResult').innerText = 'Erro: '+e.message;
+    }
+  }
+
+  // inicia display
+  updateTimerDisplay();
+</script>
+</body>
+</html>
